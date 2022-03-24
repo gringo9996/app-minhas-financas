@@ -73,7 +73,7 @@ public class UsuarioServiceTest {
 	}
 
 	@Test
-	public void deveLancarErroQuandoSenhaNoaBater() {
+	public void deveLancarErroQuandoSenhaNaoBater() {
 
 		// cenario
 
