@@ -3,7 +3,6 @@ package br.com.project.minhasfinancas.services;
 import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -13,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import br.com.project.minhasfinancas.domain.Usuario;
+import br.com.project.minhasfinancas.exceptions.ErroAutenticacao;
 import br.com.project.minhasfinancas.exceptions.RegraNegocioException;
 import br.com.project.minhasfinancas.repository.UsuarioRepository;
 import br.com.project.minhasfinancas.services.impl.UsuarioServiceImpl;
@@ -21,19 +21,20 @@ import br.com.project.minhasfinancas.services.impl.UsuarioServiceImpl;
 @ActiveProfiles("test")
 public class UsuarioServiceTest {
 
-	@SpyBean
+	@SpyBean // spy metodos mocados originais
 	UsuarioServiceImpl usuarioService;
 
 	@MockBean
 	UsuarioRepository usuarioRepository;
-
-	// metodo setup
-
-	@Before
-	public void setup() {
-		usuarioService = new UsuarioServiceImpl(usuarioRepository);
-
-	}
+	/*
+	 * // metodo setup
+	 * 
+	 * @Before public void setup() { usuarioService =
+	 * Mockito.spy(UsuarioServiceImpl.class);
+	 * 
+	 * }
+	 * 
+	 */
 
 	@Test
 	public void deveAutenticarUmUsuarioComSucesso() {
@@ -58,6 +59,38 @@ public class UsuarioServiceTest {
 	}
 
 	@Test
+	public void deveLancarErroQuandoNaoEncontrarUsuarioCadastradoComEmailInformado() {
+
+		// cenario
+		Mockito.when(usuarioRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.empty());
+
+		// acao
+		Throwable exception = Assertions.catchThrowable(() -> usuarioService.autenticar("email@email.com", "senha"));
+
+		Assertions.assertThat(exception).isInstanceOf(ErroAutenticacao.class)
+				.hasMessage("Usuario não está presente para email informado");
+
+	}
+
+	@Test
+	public void deveLancarErroQuandoSenhaNoaBater() {
+
+		// cenario
+
+		String senha = "senha";
+
+		Usuario usuario = Usuario.builder().email("email@email.com").senha(senha).build();
+
+		Mockito.when(usuarioRepository.findByEmail(Mockito.anyString())).thenReturn(Optional.of(usuario));
+
+		// acao
+		Throwable exception = Assertions.catchThrowable(() -> usuarioService.autenticar("email@email.com", "123"));
+
+		Assertions.assertThat(exception).isInstanceOf(ErroAutenticacao.class).hasMessage("Senha Inválida");
+
+	}
+
+	@Test
 	public void deveValidarEmail() {
 
 		// CENARIO
@@ -72,7 +105,7 @@ public class UsuarioServiceTest {
 
 	}
 
-	@org.junit.Test(expected = RegraNegocioException.class)
+	@Test
 	public void deveLancarErroAoValidarEmailQuandoExistirEmailCadastrado() {
 
 		// CENARIO
@@ -83,7 +116,49 @@ public class UsuarioServiceTest {
 
 		// ação
 
-		usuarioService.validarEmail("email@email.com");
+		Throwable exception = Assertions.catchThrowable(() -> usuarioService.validarEmail("email@email.com"));
+
+		Assertions.assertThat(exception).isInstanceOf(RegraNegocioException.class)
+				.hasMessage("Já existe um usuário cadastrado com esse email");
+
 	}
+	
+	
+	
+	public void deveSalvarUmUsuario() {
+		
+		//cenario
+		                            //doNothing  (não faça nada)
+		Mockito.doNothing().when(usuarioService).validarEmail(Mockito.anyString());
+		
+		Usuario usuario=Usuario.builder().id(1L)
+				.nome("nome")
+				.email("email@email.com")
+				.senha("senha").build();
+		
+		Mockito.when(usuarioRepository.save(Mockito.any(Usuario.class))).thenReturn(usuario);
+		
+		
+		//ação
+		
+	Usuario usuarioSalvo=	usuarioService.salvarUsuario(usuario);
+		
+		
+		// verificação
+	
+	Assertions.assertThat(usuarioSalvo).isNotNull();
+	Assertions.assertThat(usuarioSalvo.getId()).isEqualTo(1L);
+	Assertions.assertThat(usuarioSalvo.getNome()).isEqualTo("nome");
+	Assertions.assertThat(usuarioSalvo.getEmail()).isEqualTo("email@email.com");
+	Assertions.assertThat(usuarioSalvo.getSenha()).isEqualTo("senha");
+		
+		
+		
+		
+	}
+	
+	
+	
+	
 
 }

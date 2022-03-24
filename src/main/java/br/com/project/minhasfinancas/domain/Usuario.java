@@ -13,7 +13,9 @@ import lombok.Data;
 @Table(name = "usuarios")
 @Data
 @Builder
+
 public class Usuario {
+
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
