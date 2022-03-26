@@ -158,6 +158,32 @@ public class UsuarioServiceTest {
 	}
 	
 	
+	@org.junit.Test(expected = RegraNegocioException.class)
+	public void naoDeveSalvarUmUsuarioComEmailJaCadastrado() {
+		
+		//cenario
+		
+		String email="email@email.com";
+		
+		Usuario usuario=Usuario.builder().id(1L)
+				
+				.email(email)
+				.build();
+		
+		Mockito.doThrow(RegraNegocioException.class).when(usuarioService).validarEmail("email@email.com");
+		
+		
+		//acão 
+		
+		usuarioService.salvarUsuario(usuario);
+		
+		//verificação
+		
+		Mockito.verify(usuarioRepository,Mockito.never()).save(usuario); // esperado que não tenha chamado este metodo antes
+		
+		
+		
+	}
 	
 	
 
